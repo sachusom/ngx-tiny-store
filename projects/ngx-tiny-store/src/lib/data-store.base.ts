@@ -1,46 +1,60 @@
 
 import { BehaviorSubject, Observable, ReplaySubject, Subject } from 'rxjs';
 
-export interface DataStoreItem<T> {
-  init(): void;
+export interface DataStoreItem<T = any> {
   set(data: T): void;
-  get(): T | any;
+  get(): T;
   clear(): void;
+  // destroy(): void;
   listener$(): Observable<any>;
 }
 
-export abstract class DataStoreBase {
+export abstract class DataStoreBase<T = any> {
 
   /* Private Properties */
   private cache = new Map();
-  private listeners = [];
+  private listeners = {};
 
   /* Private Methods */
-  protected set(key: string, value: any): void {
+  private set(key: string, value: any): void {
     this.cache.set(key, value);
   }
 
-  protected get(key: string): any {
+  private get(key: string): any {
     return this.cache.get(key);
   }
 
-  protected clear(key: string): void {
-    this.cache.delete(key);
+  private clear(key: string): void {
+    this.cache.set(key, undefined);
   }
 
-  protected abstract initListeners(): void;
+  // private destroy(key: string): void {
+  //   this.cache.delete(key);
+  // }
 
-  protected manageStoreValue<T>(
+  private isKeyExists(key: string): boolean {
+    return this.listeners.hasOwnProperty(key);
+  }
+
+  private throwDuplicateKeyError(key: string): void {
+    throw (`Error in DataStoreBase. The key - '${key}' is already in use. Use a different key.`);
+  }
+
+  protected manageStoreValue<T = any>(
     key
       : string,
     listenerType
-      : Subject<any>
-      | BehaviorSubject<any>
-      | ReplaySubject<any> = new Subject<any>()
+      : Subject<T>
+      | BehaviorSubject<T>
+      | ReplaySubject<T> = new Subject<T>()
   ): DataStoreItem<T> {
+
+    if (this.isKeyExists(key)) { this.throwDuplicateKeyError(key); }
+
+    this.listeners[key] = listenerType;
+
     return {
-      init: () => this.listeners[key] = listenerType,
-      set: (data: any) => {
+      set: (data: T) => {
         this.set(key, data);
         this.listeners[key as any]
           ? this.listeners[key].next(data)
@@ -53,6 +67,10 @@ export abstract class DataStoreBase {
           ? this.listeners[key].next(undefined)
           : null;
       },
+      // destroy: () => {
+      //   this.destroy(key);
+      //   delete this.listeners[key];
+      // },
       listener$: () => this.listeners[key]
     };
   }
