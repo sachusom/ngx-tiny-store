@@ -1,6 +1,6 @@
 {
-  "name": "@ngvslabs/ngx-tiny-store",
-  "version": "0.0.3",
+  "name": "@vslabs/ngx-tiny-store",
+  "version": "0.0.1",
   "peerDependencies": {
     "@angular/common": "^13.3.0",
     "@angular/core": "^13.3.0"
